@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustomerSupport AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Link to the separated ADK App Logic -->
+    <script src="/live-customer-support/static/js/app.js" type="module"></script>
+    <style>
+        /* --- PREMIUM DESIGN SYSTEM --- */
+        :root {
+            --bg-base: #000000;
+            --panel-bg: rgba(24, 24, 26, 0.5);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --panel-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+
+            --text-primary: #F5F5F7;
+            --text-secondary: #A1A1A6;
+            --text-tertiary: #7A7A80;
+
+            --apple-green: #30D158;
+            --apple-green-glow: rgba(48, 209, 88, 0.4);
+            --apple-red: #FF453A;
+            --apple-red-glow: rgba(255, 69, 58, 0.4);
+
+            --apple-blue: #0A84FF;
+            --apple-blue-glow: rgba(10, 132, 255, 0.3);
+            --apple-blue-bg: rgba(10, 132, 255, 0.15);            
+
+            --glass-blur: blur(60px);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            padding: 24px;
+            position: relative;
+            text-rendering: optimizeLegibility;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(circle at 40% 60%, rgba(10, 132, 255, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 70% 30%, rgba(191, 90, 242, 0.04) 0%, transparent 30%),
+                radial-gradient(circle at 20% 80%, rgba(48, 209, 88, 0.03) 0%, transparent 40%);
+            animation: ambient-shift 25s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes ambient-shift {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(-3%, -3%) scale(1.05);
+            }
+        }
+
+        /* 2-Panel Layout (Modified to Flexbox to allow smooth left-panel expansion) */
+        #dashboard {
+            display: flex;
+            gap: 24px;
+            width: 100%;
+            max-width: 1500px;
+            height: 100%;
+            max-height: 800px;
+            transition: max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #dashboard.settings-open {
+            max-width: 1774px; /* Accommodates 1500 + 250 (panel) + 24 (gap) */
+        }
+        
+        /* --- NEW SETTINGS PANEL --- */
+        #settings-panel {
+            width: 0;
+            opacity: 0;
+            overflow: hidden;
+            flex-shrink: 0;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-right: -32px; /* Negate the flex gap when closed */
+            padding: 0;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: 40px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), var(--panel-highlight);
+        }
+
+        #settings-panel.open {
+            width: 250px;
+            opacity: 1;
+            margin-right: 0;
+            padding: 32px 20px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .settings-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 32px;
+            letter-spacing: -0.5px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 4px;
+        }
+
+        .setting-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap; /* Prevents the text from wrapping */
+            flex-shrink: 0
+        }
+
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active {
+            background: var(--apple-green);
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+
+        /* --- MICRO TOOL USE LOG SYSTEM --- */
+        .tool-log-section {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            min-height: 0;
+            margin-top: 0px; 
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 16px;
+        }
+
+        .tool-log-header {
+            font-size: 14px; 
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-logs-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-tertiary);
+            font-size: 10px; 
+            font-weight: 700;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .clear-logs-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.2);
+        }
+
+        #tool-log-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px; 
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 4px;
+            scrollbar-width: thin;
+        }
+
+        /* MICRO TOOL ENTRY */
+        .tool-entry {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 6px 8px; 
+            border-radius: 8px;
+            font-size: 11px; 
+            font-family: var(--font-family);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* TOOL COLORS MAP */
+        .type-finalize_order { --tool-color: #64D2FF; } 
+        .type-retrieve_orders { --tool-color: #30D158; }         
+        .type-tool_100 { --tool-color: #0A84FF; } 
+        .type-tool_101 { --tool-color: #BF5AF2; } 
+        .type-tool_102 { --tool-color: #FF9F0A; } 
+        .type-tool_103 { --tool-color: #FF453A; } 
+        .type-tool_default { --tool-color: #A1A1A6; }         
+
+
+        /* COMPACT REQUEST VS RESPONSE */
+        .tool-entry.request {
+            border-left: 2px solid var(--tool-color);
+            margin-right: 8px; 
+            box-shadow: -6px 0 12px -8px var(--tool-color);
+        }
+
+        .tool-entry.response {
+            border-right: 2px solid var(--tool-color);
+            margin-left: 8px; 
+            align-items: flex-end;
+            text-align: right;
+            background: rgba(255, 255, 255, 0.02);
+            box-shadow: 6px 0 12px -8px var(--tool-color);
+        }
+
+        .tool-meta {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .tool-entry.response .tool-meta {
+            flex-direction: row-reverse;
+        }
+
+        .tool-badge {
+            font-size: 8px; 
+            font-weight: 800;
+            padding: 2px 4px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+            color: var(--tool-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tool-name {
+            font-weight: 700;
+            font-size: 10px; 
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+        }
+
+        .tool-payload {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 9.5px; 
+            line-height: 1.3;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px;
+            border-radius: 6px;
+            width: 100%;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            text-align: left; 
+        }       
+
+        .premium-dropdown {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            
+            /* 💡 CHANGED: Explicit alignment sizing parameters added */
+            width: 124px;
+            height: 28px;
+            padding: 0 24px 0 10px;
+            font-size: 11px;
+            border-radius: 8px;
+            
+            /* Elegant Custom Minimal Downward SVG Arrow Vector Injection */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-size: 10px;
+            background-position: right 8px center; /* Pins dropdown arrow clean */
+        }
+
+        .premium-dropdown:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .premium-dropdown option {
+            background: #18181a; 
+            color: var(--text-primary);
+            font-weight: 600;
+        }        
+
+        .app-version {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .settings-btn {
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .settings-btn:hover {
+            color: #FFFFFF;
+            transform: rotate(45deg);
+        }
+        
+        .settings-btn.active {
+            color: #FFFFFF;
+            transform: rotate(90deg);
+        }
+
+        .settings-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), var(--panel-highlight);
+            border-radius: 40px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            isolation: isolate;
+            transform: translateZ(0);
+        }
+
+        /* PANEL 1: AI CORE */
+        #voice-controller {
+            width: 280px; 
+            flex-shrink: 0;
+            justify-content: flex-start; 
+            padding: 24px 20px; 
+            z-index: 10;
+            overflow-y: auto; 
+        }
+
+        .agent-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: center;
+        }
+
+        .agent-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.6px;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .agent-subtitle {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: -0.1px;
+        }
+
+        .orb-interaction-zone {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px; 
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            border-radius: 32px;
+            padding: 10px;
+            margin-top: 8px; 
+        }
+
+        .orb-interaction-zone:active {
+            transform: scale(0.95);
+        }
+
+        .orb-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .orb {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #43CBFF 10%, #9708CC 100%);
+            box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.4), inset 0 -10px 20px rgba(0, 0, 0, 0.4), 0 0 40px rgba(151, 8, 204, 0.4);
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .orb::before,
+        .orb::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            inset: -8px;
+            background: inherit;
+            opacity: 0.3;
+            z-index: -1;
+            transition: all 0.5s ease;
+        }
+
+        .state-idle .orb {
+            transform: scale(1);
+            animation: breathe 5s infinite ease-in-out;
+        }
+
+        .state-listening .orb {
+            background: linear-gradient(135deg, #0A84FF 10%, #32D74B 100%);
+            box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.4), 0 0 60px rgba(10, 132, 255, 0.6);
+            animation: pulse-listen 1.2s infinite alternate ease-in-out;
+        }
+
+        .state-listening .orb::before {
+            animation: ripple 1.5s infinite linear;
+        }
+
+        .state-listening .orb::after {
+            animation: ripple 1.5s infinite linear 0.75s;
+        }
+
+        .state-speaking .orb {
+            background: linear-gradient(135deg, #BF5AF2 10%, #FF375F 100%);
+            box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.4), 0 0 80px rgba(191, 90, 242, 0.8);
+            animation: speak-wave 0.7s infinite alternate ease-in-out;
+        }
+
+        .state-speaking .orb::before {
+            animation: ripple 1s infinite linear;
+        }
+
+        /* --- NEW: THINKING STATE (Liquid Core + Nodes) --- */
+        .state-thinking .orb {
+            background: radial-gradient(circle at 50% 50%, #ffffff 0%, #d1d1d6 100%);
+            animation: think-wave 2s infinite alternate ease-in-out;
+        }
+
+        .state-thinking .orb::before {
+            inset: -20px;
+            background: transparent;
+            border: 3px dotted rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+            -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+            animation: spin-nodes 4s linear infinite;
+            opacity: 1;
+        }
+
+        .state-thinking .orb::after {
+            inset: -10px;
+            background: transparent;
+            border: 2px solid transparent;
+            border-top: 3px solid #ffffff;
+            border-right: 3px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 20px -5px rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: spin-synthesis 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            opacity: 1;
+        }
+
+        .mic-instruction {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            
+            padding: 8px 24px;
+            border-radius: 30px;
+            border: none; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15); 
+        }
+
+        /* DYNAMIC STATE GLOWS */
+        .orb-container.state-listening + .mic-instruction {
+            color: #FFFFFF;
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(48, 209, 88, 0.15) 100%);
+            box-shadow: -15px 0 30px rgba(10, 132, 255, 0.2), 15px 0 30px rgba(48, 209, 88, 0.2);
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+        }
+
+        .orb-container.state-thinking + .mic-instruction {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+        }
+
+        .orb-container.state-speaking + .mic-instruction {
+            color: #FFFFFF;
+            background: linear-gradient(135deg, rgba(191, 90, 242, 0.15) 0%, rgba(255, 55, 95, 0.15) 100%);
+            box-shadow: -15px 0 30px rgba(191, 90, 242, 0.2), 15px 0 30px rgba(255, 55, 95, 0.2);
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+        }
+
+        .system-vitals {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 12px; 
+            margin-top: auto; 
+            padding-bottom: 12px;
+        }
+
+        .vital-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .vital-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .vital-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+        }
+
+        .vital-value.highlight-number {
+            color: #FFFFFF;
+            font-weight: 800;
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--apple-red);
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.active {
+            background: rgba(48, 209, 88, 0.15);
+            color: var(--apple-green);
+            box-shadow: 0 0 15px rgba(48, 209, 88, 0.1);
+        }
+
+        .status-badge.active::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--apple-green);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--apple-green);
+            animation: blink 2s infinite ease-in-out;
+        }
+
+        .status-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        /* --- END CONVERSATION BUTTON --- */
+        .end-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+            margin-bottom: 16px; 
+            flex-shrink: 0;      
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .end-btn-container.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .end-btn {
+            background: rgba(255, 69, 58, 0.15); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: var(--apple-red);
+            border: none; 
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1); 
+            padding: 12px 32px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.2s ease;
+        }
+
+        .end-btn:hover {
+            background: rgba(255, 69, 58, 0.25);
+            box-shadow: 0 0 20px rgba(255, 69, 58, 0.2);
+            transform: scale(1.02);
+        }
+
+        .end-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- CHAT INPUT --- */
+        .chat-container {
+            position: relative;
+            width: 100%;
+            margin-top: 0;
+            flex-grow: 0; 
+            opacity: 0;
+            overflow: hidden;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2); 
+            border-radius: 24px;
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.4), 
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+                        0 1px 1px rgba(255, 255, 255, 0.08);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }       
+
+        /* Update this specific block in your CSS */
+        .chat-container.visible {
+            flex-grow: 1;        /* 💡 CHANGE THIS from 0 to 1 to fill up the empty space */
+            margin-top: 24px;
+            margin-bottom: 16px; 
+            opacity: 1;
+            pointer-events: auto;
+            display: flex;       /* Ensure the capsule stretches internally */
+            flex-direction: column;
+        }
+
+        .chat-container:focus-within {
+            background: rgba(0, 0, 0, 0.3); 
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.5), 
+                        inset 0 0 0 1px rgba(10, 132, 255, 0.3),
+                        0 1px 1px rgba(255, 255, 255, 0.08);
+        }        
+
+        .chat-input {
+            width: 100%;
+            height: 100%;        
+            background: transparent; 
+            border: none; 
+            
+            /* 💡 Clear parameters for left attach icon, bottom-right arrow, and dropdown */
+            padding: 20px 110px 80px 56px; 
+            
+            color: #FFF;
+            font-size: 14px; 
+            font-weight: 500;
+            line-height: 1.5; 
+            outline: none;
+            resize: none; 
+            font-family: inherit; 
+            box-shadow: none; 
+        }
+
+        .chat-input::placeholder { 
+            color: rgba(255, 255, 255, 0.3); 
+            font-weight: 400; 
+        }      
+        
+        .chat-input:focus { 
+            background: rgba(0, 0, 0, 0.3); 
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.5), 
+                        inset 0 0 0 1px rgba(10, 132, 255, 0.3),
+                        0 1px 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .chat-attach-btn {
+            position: absolute;
+            left: 12px;
+            bottom: 12px; 
+            width: 36px; 
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06); 
+            color: var(--text-secondary);      
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 5;
+        }
+
+        .chat-attach-btn:hover { 
+            transform: scale(1.05); 
+            background: rgba(255, 255, 255, 0.12); 
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-send-btn {
+            position: absolute;
+            right: 12px;
+            bottom: 12px; 
+            width: 36px; 
+            height: 36px;
+            border-radius: 50%;
+            background: #FFFFFF; 
+            color: #000000;      
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 5;
+        }
+
+        .chat-send-btn:hover { 
+            transform: scale(1.05); 
+            background: #F5F5F7; 
+        }
+        
+        .chat-send-btn:active { 
+            transform: scale(0.95); 
+        }
+        
+        .chat-send-btn svg { 
+            width: 18px; 
+            height: 18px; 
+            stroke-width: 2.5px; 
+        }        
+
+        /* ==========================================================================
+        MEDIA STAGING & PREMIUM DROPDOWN LAYER
+        ========================================================================== */
+
+        /* Dropdown menu styling framework definitions */
+        #live-media-selector {
+            z-index: 10;
+            width: 140px;
+            height: 32px;
+            border-radius: 16px;
+            background-color: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: -0.1px;
+            color: #fff;
+            padding: 0 28px 0 14px;
+            background-position: right 12px center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Dropdown control wrapper layout zone */
+        .media-select-wrapper {
+            display: none;        /* 🔥 CHANGE: Hidden by default when disconnected */
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 36px;         
+            margin: 16px 0 8px 0;   
+            z-index: 15;
+        }
+
+        /* Base staging preview bar rules */
+        #chat-preview-container {
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        /* Wipes custom grey scrollbar blocks for horizontal multi-image uploads */
+        #chat-preview-list {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        #chat-preview-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 🖼️ HIGH REFACTOR: Draggable Window Container */
+        .floating-viewfinder-overlay {
+            position: absolute;
+            top: 100px;
+            left: 320px;
+            width: 260px;
+            background: rgba(20, 20, 22, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.2);
+            overflow: hidden;
+            z-index: 999;
+            display: none;
+            cursor: grab;
+            user-select: none;
+            animation: floating-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .floating-viewfinder-overlay:active { cursor: grabbing; }
+
+        @keyframes floating-appear {
+            0% { transform: scale(0.9) translateY(10px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .viewfinder-drag-bar {
+            height: 34px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .viewfinder-drag-title {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            color: var(--apple-green);
+            text-transform: uppercase;
+        }
+
+        .viewfinder-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transition: all 0.15s;
+        }
+        .viewfinder-close-btn:hover { background: rgba(255,69,58,0.2); color: var(--apple-red); }
+
+        .viewfinder-video-box {
+            position: relative;
+            width: 100%;
+            height: 165px;
+            background: #000;
+        }
+        
+        #local-viewfinder-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .viewfinder-action-row {
+            padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Premium Custom Dropdown styling framework definitions */
+        .premium-dropdown {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            
+            /* Elegant Custom Minimal Downward SVG Arrow Vector Injection */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-size: 10px;
+        }
+
+        .premium-dropdown:hover {
+            background-color: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.16);
+            color: var(--text-primary);
+        }
+
+        .premium-dropdown option {
+            background: #18181a; 
+            color: var(--text-primary);
+            font-size: 11px;
+            padding: 6px;
+        }        
+
+        /* --- RIGHT PANEL: DATA LAYER --- */
+        .right-column {
+            flex-grow: 1; 
+            min-width: 0;
+            display: grid;
+            grid-template-rows: minmax(120px, auto) 1fr;
+            gap: 32px;
+            height: 100%;
+            position: relative;
+        }
+
+        /* PANEL 2: TRANSCRIPT LAYER */
+        #transcript-panel {
+            padding: 32px 48px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        #transcript-panel::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 4px;
+            background: var(--text-tertiary);
+            border-radius: 0 4px 4px 0;
+            opacity: 0.3;
+        }
+
+        .transcript-line {
+            line-height: 1.3;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .transcript-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .user-text {
+            color: var(--text-secondary);
+            font-size: 20px;
+            font-weight: 400;
+            letter-spacing: -0.2px;
+            font-style: italic;
+            transition: opacity 0.5s ease;
+        }
+
+        .ai-text {
+            font-weight: 600;
+            font-size: 28px;
+            letter-spacing: -0.6px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #B0B0B5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            min-height: 50px;
+            line-height: 1.3;
+        }
+
+        /* --- NEW: ORDERS TABLE STYLES --- */
+        .agent-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .agent-table th { padding: 12px 16px; font-size: 11px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); }
+        .agent-table td { padding: 16px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: top; line-height: 1.5; }
+        .agent-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+        .truncate-box { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; position: relative; }
+        .table-expand-btn { background: transparent; border: none; color: var(--apple-blue); cursor: pointer; padding: 4px 0 0; display: inline-flex; align-items: center; transition: all 0.2s; border-radius: 4px; }
+        .table-expand-btn:hover { color: #fff; }
+
+        /* --- DYNAMIC TABLE STATUS BADGES --- */
+        .badge-table {
+            font-size: 11px; 
+            font-weight: 700; 
+            padding: 3px 6px; 
+            border-radius: 6px; 
+            letter-spacing: 0.5px; 
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .badge-pending   { color: #FFFFFF; background: rgba(255, 255, 255, 0.15); }
+        .badge-accepted  { color: var(--apple-blue); background: var(--apple-blue-bg); }
+        .badge-delivered { color: var(--apple-green); background: rgba(48, 209, 88, 0.15); }
+        .badge-cancelled { color: var(--apple-red); background: rgba(255, 69, 58, 0.15); }        
+
+        /* ANIMATIONS */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.4), 0 0 20px rgba(151, 8, 204, 0.2); }
+            50% { transform: scale(1.03); box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.4), 0 0 45px rgba(151, 8, 204, 0.5); }
+        }
+        @keyframes pulse-listen {
+            0% { transform: scale(1.05); }
+            100% { transform: scale(1.2); box-shadow: inset 0 10px 20px rgba(255, 255, 255, 0.5), 0 0 90px rgba(48, 209, 88, 0.7); }
+        }
+        @keyframes spin-think {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+        @keyframes speak-wave {
+            0% { transform: scale(1.05); border-radius: 50%; }
+            50% { transform: scale(1.2); border-radius: 35% 65% 65% 35% / 35% 35% 65% 65%; }
+            100% { transform: scale(1.1); border-radius: 65% 35% 35% 65% / 65% 65% 35% 35%; }
+        }
+        @keyframes ripple {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        /* --- NEW: THINKING ANIMATIONS --- */
+        @keyframes think-wave {
+            0% { transform: scale(0.98); border-radius: 50%; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 10px #ffffff; }
+            50% { transform: scale(1.04); border-radius: 35% 65% 65% 35% / 35% 35% 65% 65%; box-shadow: 0 0 35px rgba(255, 255, 255, 0.6), inset 0 0 20px #ffffff; }
+            100% { transform: scale(1.01); border-radius: 65% 35% 35% 65% / 65% 65% 35% 35%; box-shadow: 0 0 50px rgba(255, 255, 255, 0.8), inset 0 0 30px #ffffff; }
+        }
+        @keyframes spin-nodes {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-synthesis {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); border-top-width: 5px; }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        @keyframes slide-in {
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* --- APPLE "ZERO-CHROME" SCROLLBAR --- */
+        ::-webkit-scrollbar {
+            width: 16px; 
+            height: 16px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+            margin-bottom: 50px; 
+            margin-top: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 100px;
+            border: 5px solid transparent; 
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+            border-width: 4px; 
+        }
+
+        /* --- MODAL SYSTEM --- */
+        .icon-btn-small {
+            background: transparent; border: none; color: var(--text-tertiary);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            padding: 4px; border-radius: 6px; transition: all 0.2s;
+        }
+        .icon-btn-small:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            z-index: 9999; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-box {
+            width: 80%; height: 80%; background: rgba(24, 24, 26, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255,255,255,0.15);
+            display: flex; flex-direction: column; overflow: hidden;
+            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 24px 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.2);
+        }
+        .modal-header h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #fff; }
+
+        .close-modal-btn {
+            background: rgba(255,255,255,0.1); border: none; width: 36px; height: 36px;
+            border-radius: 18px; color: #fff; font-size: 22px; line-height: 1;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s;
+        }
+        .close-modal-btn:hover { background: rgba(255,69,58,0.2); color: var(--apple-red); transform: rotate(90deg); }
+
+        .modal-body {
+            flex-grow: 1; padding: 32px; display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        #tool-modal-overlay #tool-log-container { gap: 16px; padding-right: 16px; }
+        #tool-modal-overlay .tool-entry { padding: 16px 20px; border-radius: 16px; gap: 12px; }
+        #tool-modal-overlay .tool-entry.request { margin-right: 60px; border-left-width: 4px; }
+        #tool-modal-overlay .tool-entry.response { margin-left: 60px; border-right-width: 4px; }
+        #tool-modal-overlay .tool-badge { font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+        #tool-modal-overlay .tool-name { font-size: 16px; }
+        #tool-modal-overlay .tool-payload { font-size: 14px; padding: 16px; border-radius: 10px; line-height: 1.5; }        
+
+        .setting-link-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .setting-link-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: scale(1.02);
+        }
+
+        .setting-link-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .logo {
+            height: 24px; 
+            width: auto;
+            max-width: 120px; 
+            object-fit: contain; 
+            background-color: #FFFFFF; 
+            padding: 4px 8px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(153, 204, 51, 0.3); 
+            display: block;
+            align-self: center;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="dashboard">
+        <!-- NEW: SETTINGS PANEL -->
+        <div id="settings-panel">
+            <div class="settings-header">Demo Settings</div>
+            <div class="setting-item">
+                <span class="setting-label">Voice</span>
+                <select class="premium-dropdown" id="voice-select">
+                    <option value="achernar">Achernar (Female)</option>
+                    <option value="achird">Achird (Male)</option>
+                    <option value="algenib">Algenib (Male)</option>
+                    <option value="algieba">Algieba (Male)</option>
+                    <option value="alnilam">Alnilam (Male)</option>
+                    <option value="aoede">Aoede (Female)</option>
+                    <option value="autonoe">Autonoe (Female)</option>
+                    <option value="callirrhoe">Callirrhoe (Female)</option>
+                    <option value="charon">Charon (Male)</option>
+                    <option value="despina" selected>Despina (Female)</option>
+                    <option value="enceladus">Enceladus (Male)</option>
+                    <option value="erinome">Erinome (Female)</option>
+                    <option value="fenrir">Fenrir (Male)</option>
+                    <option value="gacrux">Gacrux (Female)</option>
+                    <option value="iapetus">Iapetus (Male)</option>
+                    <option value="kore">Kore (Female)</option>
+                    <option value="laomedeia">Laomedeia (Female)</option>
+                    <option value="leda">Leda (Female)</option>
+                    <option value="orus">Orus (Male)</option>
+                    <option value="pulcherrima">Pulcherrima (Female)</option>
+                    <option value="puck">Puck (Male)</option>
+                    <option value="rasalgethi">Rasalgethi (Male)</option>
+                    <option value="sadachbia">Sadachbia (Male)</option>
+                    <option value="sadaltager">Sadaltager (Male)</option>
+                    <option value="schedar">Schedar (Male)</option>
+                    <option value="sulafat">Sulafat (Female)</option>
+                    <option value="umbriel">Umbriel (Male)</option>
+                    <option value="vindemiatrix">Vindemiatrix (Female)</option>
+                    <option value="zephyr">Zephyr (Female)</option>
+                    <option value="zubenelgenubi">Zubenelgenubi (Male)</option>
+                </select>
+            </div>
+            <!-- NEW AGENT DROPDOWN -->
+            <div class="setting-item">
+                <span class="setting-label">Agent Name</span>
+                <select class="premium-dropdown" id="agent-select">
+                    <option value="">Loading...</option>
+                </select>
+            </div>                        
+            <div class="setting-item">
+                <span class="setting-label">Affective Dialog</span>
+                <div class="toggle-switch" id="affective-toggle"></div>
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Proactive Audio</span>
+                <div class="toggle-switch active" id="proactive-toggle"></div>
+            </div>
+
+            <div class="setting-item">
+                <span class="setting-label">Initialize Demo</span>
+                <a href="https://telcodemos.com/live-customer-support/initialize" target="_blank" class="setting-link-btn">
+                    Open
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                </a>
+            </div>           
+
+            <div class="tool-log-section">
+                <div class="tool-log-header">
+                    <span>Tool Activity</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="icon-btn-small" id="expand-logs-btn" title="Expand Logs">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                            </svg>
+                        </button>
+                        <button class="clear-logs-btn" onclick="document.getElementById('tool-log-container').innerHTML = ''">CLEAR</button>
+                    </div>
+                </div>
+                <!-- SIDEBAR SLOT -->
+                <div id="sidebar-log-slot" style="display: flex; flex-direction: column; flex-grow: 1; min-height: 0;">
+                    <div id="tool-log-container">
+                        <!-- Logs dynamically injected here ONE time -->
+                    </div>
+                </div>
+            </div>            
+
+            <div class="app-version">
+                <span>App Version</span>
+                <span>v2.0</span>
+            </div>
+        </div>
+
+        <!-- 1. LEFT PANEL: AI CORE -->
+        <div class="glass-panel" id="voice-controller">
+            
+            <div class="agent-header">
+                <div class="agent-title">
+                    <!--img src="/live-customer-support/static/logo.svg" alt="Logo" class="logo">-->
+                    <span>CustomerSupport AI</span>
+                </div>
+                <div class="agent-subtitle">ADK Agent (Gemini Live Flash 2.5)</div>
+            </div>
+
+            <!-- ID added here for app.js to bind the connection -->
+            <div class="orb-interaction-zone" id="orb-button">
+                <div class="orb-container state-idle" id="orb-state">
+                    <div class="orb"></div>
+                </div>
+                <div class="mic-instruction" id="mic-text">Tap to Connect</div>                           
+            </div>
+
+            <div class="media-select-wrapper">
+                <select class="premium-dropdown" id="live-media-selector">
+                    <option value="none" selected>🎥 Stream Off</option>
+                    <option value="webcam">📷 Share Webcam</option>
+                    <option value="screen">🖥️ Share Screen</option>
+                </select>
+            </div>            
+
+            <div class="chat-container" id="chat-container">
+                
+                <input type="file" id="chat-file-input" accept="image/*" style="display: none;" />
+                
+                <div id="chat-preview-container" style="display: none; padding: 10px 14px; flex-direction: column; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.3); border-radius: 20px 20px 0 0;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 2px;">
+                        <span style="font-size: 10px; color: var(--apple-green); font-weight: 800; letter-spacing: 0.5px;">Preview</span>
+                        <button id="chat-preview-clear-all" style="background: transparent; border: none; color: var(--text-tertiary); font-size: 10px; font-weight: 700; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#FF453A'" onmouseout="this.style.color='var(--text-tertiary)'">CLEAR ALL</button>
+                    </div>
+                    
+                    <div id="chat-preview-list" style="display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px; scrollbar-width: none; -ms-overflow-style: none;"></div>
+
+                </div>
+
+                <button class="chat-attach-btn" id="chat-attach-btn" title="Attach Image">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                    </svg>
+                </button>
+
+                <textarea class="chat-input" id="chat-input" placeholder="Message CustomerSupport AI..."></textarea>
+
+                <button class="chat-send-btn" id="chat-send-btn" title="Send Message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="end-btn-container" id="end-btn-container">
+                <button class="end-btn" id="end-btn">End Conversation</button>
+            </div>              
+                
+            <div class="system-vitals">
+                <div class="vital-row">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <!-- NEW SETTINGS BUTTON -->
+                        <div class="settings-btn" id="settings-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </div>
+                        <span class="vital-label">Agent Status</span>
+                    </div>
+                    <span class="status-badge" id="socket-status">Offline</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. RIGHT PANEL DATA LAYER -->
+        <div class="right-column">         
+            <div class="glass-panel" id="transcript-panel">
+                <div class="user-text" id="transcript-user">Press connect, then speak...</div>
+                <div class="ai-text" id="transcript-ai"></div>
+            </div>
+
+            <!-- NEW: SHOP ORDERS PANEL -->
+            <div class="glass-panel" id="orders-panel" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; padding: 24px;">
+                <div style="font-size: 14px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 16px; flex-shrink: 0;">
+                    Shop Orders (Agent - <span id="orders-agent-name">None</span>)
+                </div>
+                <div class="table-body" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+                    <div id="orders-table-container" style="flex-grow: 1; overflow-y: auto;">
+                        <div style="padding: 40px; text-align: center; color: var(--text-secondary); font-size: 13px;">
+                            Select an agent from settings to view orders.
+                        </div>
+                    </div>
+                    <div id="orders-pagination-bar" style="display: none; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(255, 255, 255, 0.02); border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; color: var(--text-secondary); flex-shrink: 0;">
+                        <div>Showing <span id="orders-page-start">0</span> - <span id="orders-page-end">0</span> of <span id="orders-page-total">0</span></div>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="orders-page-prev" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 4px 8px; cursor: pointer; color: var(--text-primary); transition: all 0.2s;" disabled>&lt; Prev</button>
+                            <button id="orders-page-next" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 4px 8px; cursor: pointer; color: var(--text-primary); transition: all 0.2s;" disabled>Next &gt;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="video-viewfinder-wrapper" class="floating-viewfinder-overlay">
+        <div class="viewfinder-drag-bar" id="viewfinder-drag-handle">
+            <span class="viewfinder-drag-title" id="media-staging-title">Staged Preview</span>
+            <button class="viewfinder-close-btn" onclick="window.clearActiveVideoStreams()">&times;</button>
+        </div>
+        <div class="viewfinder-video-box">
+            <video id="local-viewfinder-video" autoplay muted playsinline></video>
+        </div>
+        <div class="viewfinder-action-row">
+            <button id="network-start-stream-btn" onclick="window.startLiveVideoTransmission()" style="background: var(--apple-green); border: none; color: white; font-size: 11px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(48,209,88,0.3); width: 100%;">
+                🚀 Stream to Agent
+            </button>
+            <button id="network-stop-stream-btn" onclick="window.clearActiveVideoStreams()" style="display: none; background: rgba(255, 69, 58, 0.9); border: none; color: white; font-size: 11px; font-weight: 700; padding: 8px 16px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,69,58,0.3); width: 100%;">
+                🛑 Stop Stream
+            </button>
+        </div>
+    </div>
+
+    <!-- TEXTAREA FOCUS OVERLAY FOR ORDERS -->
+    <div id="focus-overlay" class="modal-overlay">
+        <div class="modal-box" style="width: 600px; height: 400px; max-width: 90%; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2 id="focus-title">Details</h2>
+                <button class="close-modal-btn" id="focus-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 24px; flex-grow: 1; display: flex; flex-direction: column;">
+                <textarea id="focus-textarea" readonly style="flex-grow: 1; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; color: #fff; font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.5; resize: none; outline: none;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- BIG TOOL LOG MODAL OVERLAY -->
+    <div id="tool-modal-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Tool Activity Logs</h2>
+                <button class="close-modal-btn" id="close-logs-btn">&times;</button>
+            </div>
+            <!-- MODAL SLOT -->
+            <div id="modal-log-slot" class="modal-body">
+                <!-- Log container gets MOVED here when opened -->
+            </div>
+        </div>
+    </div>   
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAU4978uMcFABSTmOtC70ySsAP4yoJpqv8",
+            authDomain: "genai-e2e-demos.firebaseapp.com",
+            projectId: "genai-e2e-demos",
+            storageBucket: "genai-e2e-demos.firebasestorage.app",
+            messagingSenderId: "554686566379",
+            appId: "1:554686566379:web:831233e3dc505cd7e913ae"
+        };
+
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app, "live-customersupport-ai");
+        } catch (e) {
+            console.error("Firebase init failed:", e);
+        }
+
+        // --- NEW: ORDERS FETCHING & RENDERING ---
+        let allOrdersData = [];
+        let currentOrdersPage = 1;
+        const ordersPerPage = 5;
+
+        async function loadOrdersForAgent(agentName) {
+            const container = document.getElementById('orders-table-container');
+            const agentNameLabel = document.getElementById('orders-agent-name');
+            const paginationBar = document.getElementById('orders-pagination-bar');
+            
+            agentNameLabel.textContent = agentName || "None";
+            
+            if (!agentName) {
+                container.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-secondary); font-size: 13px;">Select an agent from settings to view orders.</div>`;
+                paginationBar.style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-secondary); font-size: 13px;">Loading orders...</div>`;
+            
+            try {
+                const ordersRef = collection(db, "orders");
+                // Removed orderBy to prevent Firestore from demanding a composite index
+                const q = query(ordersRef, where("order_details.agent_name", "==", agentName));
+                const snapshot = await getDocs(q);
+                
+                allOrdersData = [];
+                snapshot.forEach(doc => {
+                    allOrdersData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort client-side descending by order_id
+                allOrdersData.sort((a, b) => (b.order_id || 0) - (a.order_id || 0));
+                
+                currentOrdersPage = 1;
+                renderOrdersTable();
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+                container.innerHTML = `<div style="padding: 40px; text-align: center; color: #FF453A; font-size: 13px;">Failed to load orders.</div>`;
+                paginationBar.style.display = 'none';
+            }
+        }
+
+        function renderOrdersTable() {
+            const container = document.getElementById('orders-table-container');
+            const paginationBar = document.getElementById('orders-pagination-bar');
+            
+            if (allOrdersData.length === 0) {
+                container.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-secondary); font-size: 13px;">No orders found for this agent.</div>`;
+                paginationBar.style.display = 'none';
+                return;
+            }
+
+            const totalItems = allOrdersData.length;
+            const totalPages = Math.ceil(totalItems / ordersPerPage);
+            
+            if (currentOrdersPage > totalPages) currentOrdersPage = totalPages;
+            if (currentOrdersPage < 1) currentOrdersPage = 1;
+
+            const startIndex = (currentOrdersPage - 1) * ordersPerPage;
+            const endIndex = Math.min(startIndex + ordersPerPage, totalItems);
+            const pageData = allOrdersData.slice(startIndex, endIndex);
+
+            let html = `
+                <table class="agent-table">
+                    <thead>
+                        <tr>
+                            <th width="8%">Order ID</th>
+                            <th width="14%">Created At</th>
+                            <th width="12%">Contact No.</th>
+                            <th width="10%">Status</th>
+                            <th width="12%">Delivery Date</th>
+                            <th width="22%">Delivery Address</th>
+                            <th width="22%">Order Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            const escapeHTML = (str) => {
+                if (!str) return '';
+                return String(str).replace(/[&<>'"]/g, tag => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+                }[tag]));
+            };
+
+            pageData.forEach(order => {
+                const details = order.order_details || {};
+                
+                // Format the created_at timestamp nicely
+                let createdAtFormatted = 'N/A';
+                if (order.created_at) {
+                    try {
+                        // Check if it's a Firestore Timestamp (has toDate method) or a normal string
+                        const dateObj = typeof order.created_at.toDate === 'function' 
+                            ? order.created_at.toDate() 
+                            : new Date(order.created_at);
+                            
+                        createdAtFormatted = dateObj.toLocaleString([], { 
+                            month: 'short', day: 'numeric', 
+                            hour: '2-digit', minute: '2-digit' 
+                        });
+                    } catch (e) {
+                        createdAtFormatted = escapeHTML(String(order.created_at));
+                    }
+                }
+                
+                // --- Dynamic Status Colors ---
+                const orderStatus = order.order_status || 'PENDING QUOTE';
+                const statusUpper = orderStatus.toUpperCase();
+                let statusClass = 'badge-pending'; // Default to White
+                
+                if (statusUpper.includes('ACCEPTED') || statusUpper.includes('CONFIRM')) {
+                    statusClass = 'badge-accepted'; // Blue
+                } else if (statusUpper.includes('DELIVERED')) {
+                    statusClass = 'badge-delivered'; // Green
+                } else if (statusUpper.includes('CANCELLED')) {
+                    statusClass = 'badge-cancelled'; // Red
+                }
+                // ----------------------------------
+
+                html += `
+                    <tr>
+                        <td style="font-weight:700; color:var(--text-primary);">#${order.order_id || 'N/A'}</td>
+                        <td style="font-size:12px; color:var(--text-secondary);">${createdAtFormatted}</td>
+                        <td><code style="color:var(--apple-green); font-size:11px; background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:4px;">${escapeHTML(order.contact_number)}</code></td>
+                        <td><span class="badge-table ${statusClass}">${escapeHTML(orderStatus)}</span></td>
+                        <td style="font-size:12px; color:var(--text-secondary);">${escapeHTML(details.delivery_date)}</td>
+                        <td>
+                            <div class="truncate-box">${escapeHTML(details.delivery_address)}</div>
+                            <button class="table-expand-btn view-expand-btn" data-type="Address Details" data-content="${escapeHTML(details.delivery_address)}" title="Expand Address">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                            </button>
+                        </td>
+                        <td>
+                            <div class="truncate-box">${escapeHTML(details.full_order_details)}</div>
+                            <button class="table-expand-btn view-expand-btn" data-type="Order Details" data-content="${escapeHTML(details.full_order_details)}" title="Expand Details">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+
+            document.getElementById('orders-page-start').textContent = startIndex + 1;
+            document.getElementById('orders-page-end').textContent = endIndex;
+            document.getElementById('orders-page-total').textContent = totalItems;
+            
+            const prevBtn = document.getElementById('orders-page-prev');
+            const nextBtn = document.getElementById('orders-page-next');
+            
+            prevBtn.disabled = currentOrdersPage === 1;
+            nextBtn.disabled = currentOrdersPage === totalPages;
+            
+            prevBtn.style.opacity = prevBtn.disabled ? '0.3' : '1';
+            nextBtn.style.opacity = nextBtn.disabled ? '0.3' : '1';
+            
+            paginationBar.style.display = 'flex';
+        }
+
+        // --- NEW: FETCH AGENTS FROM FIRESTORE ---
+        async function loadAgents() {
+            const agentSelect = document.getElementById('agent-select');
+            if (!agentSelect || !db) return;
+
+            try {
+                // Create a query against the collection, checking for isKnowledgeBaseReady == true
+                const agentsRef = collection(db, "ai-agents");
+                const q = query(agentsRef, where("isKnowledgeBaseReady", "==", true));
+                const querySnapshot = await getDocs(q);
+
+                agentSelect.innerHTML = ''; // Clear the "Loading..." placeholder
+
+                if (querySnapshot.empty) {
+                    const option = document.createElement('option');
+                    option.value = "";
+                    option.text = "No Ready Agents Found";
+                    agentSelect.appendChild(option);
+                    return;
+                }
+
+                let firstAgent = null;
+                // Populate the dropdown
+                querySnapshot.forEach((doc) => {
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.text = doc.id; // Or you could use doc.data().agentName if it's different
+                    agentSelect.appendChild(option);
+                    if (!firstAgent) firstAgent = doc.id;
+                });
+
+                // Load orders for the first agent on initial load
+                if (firstAgent) {
+                    loadOrdersForAgent(firstAgent);
+                }
+
+            } catch (error) {
+                console.error("Error fetching agents:", error);
+                agentSelect.innerHTML = '<option value="">Error Loading Agents</option>';
+            }
+        }
+
+        /** SETUP MOUSE DRAG LOGIC FOR OVERLAY */
+        function setupDraggableOverlay() {
+            const el = document.getElementById('video-viewfinder-wrapper');
+            const handle = document.getElementById('viewfinder-drag-handle');
+            if (!el || !handle) return;
+
+            let xOff = 0, yOff = 0, xStart = 0, yStart = 0;
+
+            handle.onmousedown = (e) => {
+                e.preventDefault();
+                // Capture initial cursor positions on downclick
+                xStart = e.clientX;
+                yStart = e.clientY;
+                
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            };
+
+            function elementDrag(e) {
+                e.preventDefault();
+                // Compute positional shifts against previous tick array
+                xOff = xStart - e.clientX;
+                yOff = yStart - e.clientY;
+                xStart = e.clientX;
+                yStart = e.clientY;
+                
+                // Set the element's new layout style placement coordinates
+                el.style.top = (el.offsetTop - yOff) + "px";
+                el.style.left = (el.offsetLeft - xOff) + "px";
+            }
+
+            function closeDragElement() {
+                // Wipe trackers completely to drop performance drag lag
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        // --- EXISTING: SETTINGS TOGGLE LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsPanel = document.getElementById('settings-panel');
+            const dashboard = document.getElementById('dashboard');
+            
+            if (settingsBtn && settingsPanel && dashboard) {
+                settingsBtn.addEventListener('click', () => {
+                    settingsPanel.classList.toggle('open');
+                    settingsBtn.classList.toggle('active');
+                    dashboard.classList.toggle('settings-open');
+                });
+            }
+
+            document.querySelectorAll('.toggle-switch').forEach(switchEl => {
+                switchEl.addEventListener('click', () => {
+                    switchEl.classList.toggle('active');
+                });
+            });
+
+            // Handle Agent Selection Change
+            const agentSelect = document.getElementById('agent-select');
+            if (agentSelect) {
+                agentSelect.addEventListener('change', (e) => {
+                    loadOrdersForAgent(e.target.value);
+                });
+            }
+
+            // Orders Pagination Bindings
+            document.getElementById('orders-page-prev')?.addEventListener('click', () => {
+                if (currentOrdersPage > 1) {
+                    currentOrdersPage--;
+                    renderOrdersTable();
+                }
+            });
+            
+            document.getElementById('orders-page-next')?.addEventListener('click', () => {
+                const totalPages = Math.ceil(allOrdersData.length / ordersPerPage);
+                if (currentOrdersPage < totalPages) {
+                    currentOrdersPage++;
+                    renderOrdersTable();
+                }
+            });
+
+            // Expand Content Bindings (Event Delegation)
+            document.getElementById('orders-table-container')?.addEventListener('click', (e) => {
+                const expandBtn = e.target.closest('.view-expand-btn');
+                if (expandBtn) {
+                    const title = expandBtn.getAttribute('data-type');
+                    const content = expandBtn.getAttribute('data-content');
+                    
+                    document.getElementById('focus-title').textContent = title;
+                    document.getElementById('focus-textarea').value = content;
+                    
+                    const overlay = document.getElementById('focus-overlay');
+                    overlay.style.display = 'flex';
+                    setTimeout(() => overlay.classList.add('active'), 10);
+                }
+            });
+
+            // Focus Overlay Closing
+            document.getElementById('focus-close-btn')?.addEventListener('click', () => {
+                const overlay = document.getElementById('focus-overlay');
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.style.display = 'none', 300);
+            });
+            
+            document.getElementById('focus-overlay')?.addEventListener('click', (e) => {
+                if (e.target.id === 'focus-overlay') {
+                    document.getElementById('focus-close-btn').click();
+                }
+            });
+
+            // Trigger the agent load when the page is ready
+            loadAgents();
+
+
+            // Fire the dragging vectors directly here in index.html!
+            // This bypasses the app.js ES module scope boundary.
+            setupDraggableOverlay();
+        });
+
+        window.setAgentState = function(state) {
+            const orbContainer = document.getElementById('orb-state');
+            const micText = document.getElementById('mic-text');
+            if(orbContainer) {
+                orbContainer.className = 'orb-container';
+                orbContainer.classList.add(`state-${state.toLowerCase()}`);
+            }
+            if(micText) {
+                const textMap = { 'IDLE': 'Tap to Connect', 'LISTENING': 'Listening...', 'THINKING': 'Thinking...', 'SPEAKING': 'Tap to Interrupt' };
+                micText.innerText = textMap[state] || state;
+            }
+        };
+
+        window.updateTranscript = function(userText, aiText) {
+            const userEl = document.getElementById('transcript-user');
+            const aiEl = document.getElementById('transcript-ai');
+
+            if (userText !== null && userEl) {
+                userEl.classList.remove('visible');
+                setTimeout(() => { userEl.innerText = userText ? `"${userText}"` : ''; if (userText) userEl.classList.add('visible'); }, 400);
+            }
+            if (aiText !== null && aiEl) {
+                aiEl.classList.remove('visible');
+                setTimeout(() => { aiEl.innerText = aiText; if (aiText) aiEl.classList.add('visible'); }, 400);
+            }
+        };
+
+        // Global function exposed for app.js to trigger a table refresh
+        window.refreshOrdersTable = function() {
+            const agentSelect = document.getElementById('agent-select');
+            // Check if an agent is currently selected, then fetch their latest orders
+            if (agentSelect && agentSelect.value) {
+                loadOrdersForAgent(agentSelect.value);
+            }
+        };        
+
+        // --- 6. TOOL USE LOG EXPORT ---
+        const TOOL_LOG_CONFIG = {
+            MAX_ENTRIES: 50,
+            KNOWN_TOOLS: new Set([
+                'finalize_order', 'retrieve_orders'
+            ])
+        };
+
+        /**
+        * Pure function to format tool payloads securely.
+        * Separated from DOM logic for easy unit testing.
+        */
+        function formatToolPayload(toolName, isRequest, rawPayload) {
+            // 1. Normalize empty inputs
+            if (rawPayload == null) return isRequest ? "{}" : "";
+
+            // 2. Parse stringified JSON if necessary
+            let parsed = rawPayload;
+            if (typeof rawPayload === 'string') {
+                try { parsed = JSON.parse(rawPayload); } catch (e) { /* keep as string */ }
+            }
+
+            // 3. Handle YAML specifically for the device info response
+            if (toolName === 'get_smart_home_devices_info' && !isRequest) {
+                let yamlStr = "";
+                
+                // Safely extract from known backend contract structures
+                if (typeof parsed === 'object' && parsed !== null) {
+                    yamlStr = parsed.result || parsed?.response?.result || JSON.stringify(parsed, null, 2);
+                } else {
+                    yamlStr = String(parsed);
+                }
+
+                // Fix double-escaped newlines from backend
+                return yamlStr.replace(/\\n/g, '\n');
+            }
+
+            // 4. Default: Pretty-print JSON
+            return typeof parsed === 'object' 
+                ? JSON.stringify(parsed, null, 2) 
+                : String(parsed);
+        }
+
+        /**
+        * DOM Rendering logic (Secured against XSS)
+        */
+        window.logToolUse = function(toolName, isRequest, payload) {
+            const container = document.getElementById('tool-log-container');
+            if (!container) return;
+
+            // 1. Data Preparation
+            const safeType = TOOL_LOG_CONFIG.KNOWN_TOOLS.has(toolName) ? toolName : 'tool_default';
+            const reqClass = isRequest ? 'request' : 'response';
+            const badgeText = isRequest ? 'REQ' : 'RES';
+            const formattedPayload = formatToolPayload(toolName, isRequest, payload);
+
+            // 2. Secure DOM Creation (Avoiding innerHTML for untrusted data)
+            const logEl = document.createElement('div');
+            logEl.className = `tool-entry ${reqClass} type-${safeType}`;
+            
+            // It is safe to use innerHTML for our own hardcoded UI structure
+            logEl.innerHTML = `
+                <div class="tool-meta">
+                    <span class="tool-badge">${badgeText}</span>
+                    <span class="tool-name"></span>
+                </div>
+                <div class="tool-payload"></div>
+            `;
+
+            // SECURE: Inject untrusted data using textContent
+            logEl.querySelector('.tool-name').textContent = toolName;
+            logEl.querySelector('.tool-payload').textContent = formattedPayload;
+
+            // 3. DOM Management (Prevent memory leaks)
+            container.appendChild(logEl);
+            while (container.children.length > TOOL_LOG_CONFIG.MAX_ENTRIES) {
+                container.removeChild(container.firstChild);
+            }
+            
+            // 4. UX: Auto-scroll
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        };
+
+        // --- MODAL EVENT LISTENERS ---
+        function initToolModal() {
+            const expandBtn = document.getElementById('expand-logs-btn');
+            const closeBtn = document.getElementById('close-logs-btn');
+            const modalOverlay = document.getElementById('tool-modal-overlay');
+            
+            const logContainer = document.getElementById('tool-log-container');
+            const sidebarSlot = document.getElementById('sidebar-log-slot');
+            const modalSlot = document.getElementById('modal-log-slot');
+
+            if (!expandBtn || !closeBtn || !modalOverlay || !logContainer || !sidebarSlot || !modalSlot) {
+                console.warn("Modal setup skipped. Missing HTML elements.");
+                return;
+            }
+
+            // 2. Expand Click
+            expandBtn.addEventListener('click', () => {
+                // Move container to modal
+                modalSlot.appendChild(logContainer);
+                
+                // Fade in
+                modalOverlay.style.display = 'flex';
+                setTimeout(() => {
+                    modalOverlay.classList.add('active');
+                }, 10);
+                
+                // Scroll to latest log
+                logContainer.scrollTo({ top: logContainer.scrollHeight });
+            });
+
+            // 3. Close Click
+            closeBtn.addEventListener('click', () => {
+                // Fade out
+                modalOverlay.classList.remove('active');
+                
+                setTimeout(() => {
+                    modalOverlay.style.display = 'none';
+                    
+                    // Move container back to sidebar safely AFTER fade out
+                    sidebarSlot.appendChild(logContainer);
+                    logContainer.scrollTo({ top: logContainer.scrollHeight });
+                }, 300); // 300ms matches the CSS transition time
+            });
+            
+            // 4. Close on clicking the dark background overlay
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) closeBtn.click();
+            });
+        }
+        
+        initToolModal();
+        
+    </script>
+</body>
+</html>

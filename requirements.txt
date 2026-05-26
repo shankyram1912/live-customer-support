@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+websockets
+google-genai
+pydantic
+python-dotenv
+google-adk
+google-cloud-firestore
+google-cloud-storage

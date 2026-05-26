@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustomerSupport AI — Admin Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #000000;
+            --panel-bg: rgba(24, 24, 26, 0.5);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --panel-highlight: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+            --text-primary: #F5F5F7;
+            --text-secondary: #A1A1A6;
+            --text-tertiary: #7A7A80;
+            --apple-green: #30D158;
+            --apple-green-glow: rgba(48, 209, 88, 0.4);
+            --apple-red: #FF453A;
+            --apple-red-glow: rgba(255, 69, 58, 0.4);
+            --apple-blue: #0A84FF;
+            --apple-blue-glow: rgba(10, 132, 255, 0.3);
+            --apple-blue-bg: rgba(10, 132, 255, 0.15);
+            --apple-orange: #FF9F0A;
+            --apple-purple: #BF5AF2;
+            --glass-blur: blur(60px);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 24px 60px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(circle at 30% 50%, rgba(10, 132, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 75% 25%, rgba(255, 159, 10, 0.04) 0%, transparent 30%),
+                radial-gradient(circle at 20% 80%, rgba(48, 209, 88, 0.03) 0%, transparent 40%);
+            animation: ambient-shift 25s ease-in-out infinite alternate;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes ambient-shift {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(-3%, -3%) scale(1.05);
+            }
+        }
+
+        .console-wrapper {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ── HEADER ── */
+        .console-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(191, 90, 242, 0.15);
+            border: 1px solid rgba(191, 90, 242, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--apple-purple);
+        }
+
+        .header-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            color: #fff;
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+
+        .engine-pill {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 5px 12px;
+            border-radius: 14px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-secondary);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        /* ── GLASS PANEL ── */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), var(--panel-highlight);
+            border-radius: 28px;
+            padding: 28px 32px;
+        }
+
+        /* ── STATUS ── */
+        #status-message {
+            display: none;
+            padding: 14px 20px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid transparent;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #status-message.visible {
+            display: flex;
+        }
+
+        #status-message.error {
+            background: rgba(255, 69, 58, 0.1);
+            color: var(--apple-red);
+            border-color: rgba(255, 69, 58, 0.25);
+        }
+
+        #status-message.success {
+            background: rgba(48, 209, 88, 0.1);
+            color: var(--apple-green);
+            border-color: rgba(48, 209, 88, 0.25);
+        }
+
+        #status-message.info {
+            background: var(--apple-blue-bg);
+            color: var(--apple-blue);
+            border-color: rgba(10, 132, 255, 0.25);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .error .status-dot {
+            background: var(--apple-red);
+            box-shadow: 0 0 8px var(--apple-red-glow);
+        }
+
+        .success .status-dot {
+            background: var(--apple-green);
+            box-shadow: 0 0 8px var(--apple-green-glow);
+            animation: blink 2s infinite;
+        }
+
+        .info .status-dot {
+            background: var(--apple-blue);
+            box-shadow: 0 0 8px var(--apple-blue-glow);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        /* ── SECTION LABEL ── */
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            color: var(--text-tertiary);
+            margin-bottom: 14px;
+        }
+
+        /* ── ACTION BUTTONS ROW ── */
+        .actions-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 13px 12px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: -0.1px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            white-space: nowrap;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .action-btn svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-create {
+            background: rgba(48, 209, 88, 0.12);
+            color: var(--apple-green);
+            border-color: rgba(48, 209, 88, 0.25);
+        }
+
+        .btn-create:hover:not(:disabled) {
+            background: rgba(48, 209, 88, 0.2);
+            box-shadow: 0 0 18px rgba(48, 209, 88, 0.15);
+        }
+
+        .btn-retrieve {
+            background: var(--apple-blue-bg);
+            color: var(--apple-blue);
+            border-color: rgba(10, 132, 255, 0.25);
+        }
+
+        .btn-retrieve:hover:not(:disabled) {
+            background: rgba(10, 132, 255, 0.22);
+            box-shadow: 0 0 18px var(--apple-blue-glow);
+        }
+
+        .panel-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 22px 0;
+        }
+
+        /* ── TABLE VIEW ── */
+        .editor-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: none;
+            border-radius: 16px 16px 0 0;
+            padding: 10px 14px;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .tl-dots {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .tl-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .tl-red {
+            background: #FF5F57;
+        }
+
+        .tl-yellow {
+            background: #FEBC2E;
+        }
+
+        .tl-green {
+            background: #28C840;
+        }
+
+        .mode-pill {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(10, 132, 255, 0.25);
+            background: var(--apple-blue-bg);
+            color: var(--apple-blue);
+            white-space: nowrap;
+        }
+
+        .table-body {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: none;
+            border-radius: 0 0 16px 16px;
+            overflow: hidden;
+            min-height: 200px;
+        }
+
+        .agent-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .agent-table th {
+            padding: 12px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .agent-table td {
+            padding: 16px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        .agent-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .agent-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .truncate-box {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 4.5em;
+            position: relative;
+        }
+
+        .table-expand-btn {
+            background: transparent;
+            border: none;
+            color: var(--apple-blue);
+            cursor: pointer;
+            padding: 4px 0 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .table-expand-btn:hover {
+            color: #fff;
+        }
+
+        .table-expand-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .table-action-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            outline: none;
+        }
+
+        .table-action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .table-action-btn.view-file-btn:hover {
+            background: rgba(191, 90, 242, 0.15);
+            color: var(--apple-purple);
+            border-color: rgba(191, 90, 242, 0.3);
+        }
+
+        .table-action-btn.edit-row-btn:hover {
+            background: rgba(10, 132, 255, 0.15);
+            color: var(--apple-blue);
+            border-color: rgba(10, 132, 255, 0.3);
+        }
+
+        .table-action-btn.delete-row-btn:hover {
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--apple-red);
+            border-color: rgba(255, 69, 58, 0.3);
+        }
+
+        /* Pagination */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .page-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .rows-select {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-size: 12px;
+            border-radius: 6px;
+            padding: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        /* ── MODALS ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-box {
+            background: rgba(28, 28, 30, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-box.small {
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .modal-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-icon.green {
+            background: rgba(48, 209, 88, 0.12);
+            border: 1px solid rgba(48, 209, 88, 0.25);
+            color: var(--apple-green);
+        }
+
+        .modal-icon.red {
+            background: rgba(255, 69, 58, 0.12);
+            border: 1px solid rgba(255, 69, 58, 0.25);
+            color: var(--apple-red);
+        }
+
+        .modal-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.4px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .modal-body {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            border-color: rgba(48, 209, 88, 0.5);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        .form-textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 14px 28px;
+            font-size: 14px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+            resize: none;
+            overflow: hidden;
+            min-height: 50px;
+            line-height: 1.5;
+        }
+
+        .expand-btn {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 6px;
+            padding: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .expand-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .expand-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Custom File Upload */
+        .file-upload-wrapper {
+            position: relative;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .file-upload-wrapper:hover,
+        .file-upload-wrapper.dragover {
+            border-color: rgba(48, 209, 88, 0.5);
+            background: rgba(48, 209, 88, 0.05);
+        }
+
+        .file-upload-wrapper.invalid {
+            border-color: rgba(255, 69, 58, 0.5) !important;
+            background: rgba(255, 69, 58, 0.05) !important;
+        }
+
+        .file-upload-wrapper.invalid .file-icon,
+        .file-upload-wrapper.invalid .file-text span {
+            color: var(--apple-red);
+        }
+
+        .file-upload-input {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .file-upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .file-icon {
+            color: var(--text-tertiary);
+        }
+
+        .file-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .file-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .file-text span {
+            color: var(--apple-green);
+            font-weight: 600;
+        }
+
+        .file-name-display {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: none;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn-modal-cancel {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-cancel:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-modal-success {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(48, 209, 88, 0.15);
+            border: 1px solid rgba(48, 209, 88, 0.3);
+            color: var(--apple-green);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-success:hover {
+            background: rgba(48, 209, 88, 0.25);
+            box-shadow: 0 0 20px rgba(48, 209, 88, 0.2);
+        }
+
+        .btn-modal-danger {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 69, 58, 0.15);
+            border: 1px solid rgba(255, 69, 58, 0.3);
+            color: var(--apple-red);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-danger:hover {
+            background: rgba(255, 69, 58, 0.25);
+            box-shadow: 0 0 20px rgba(255, 69, 58, 0.2);
+        }
+
+        /* Focus Overlay for Textareas */
+        #focus-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        #focus-overlay.visible {
+            display: flex;
+        }
+
+        .focus-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .focus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+        }
+
+        .focus-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .focus-textarea {
+            width: 100%;
+            height: 60vh;
+            background: rgba(28, 28, 30, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 15px;
+            color: #fff;
+            line-height: 1.6;
+            outline: none;
+            resize: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            font-family: var(--mono);
+        }
+
+        .focus-textarea:focus {
+            border-color: var(--apple-blue);
+        }
+
+        .focus-done-btn {
+            align-self: flex-end;
+            background: var(--apple-blue);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .focus-done-btn:hover {
+            opacity: 0.9;
+        }
+
+        code {
+            font-family: var(--mono);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── TEXTAREA FOCUS OVERLAY ── -->
+    <div id="focus-overlay">
+        <div class="focus-container">
+            <div class="focus-header">
+                <div class="focus-title" id="focus-title">Editing Content</div>
+            </div>
+            <textarea class="focus-textarea" id="focus-textarea" spellcheck="false"></textarea>
+            <button class="focus-done-btn" id="focus-done-btn">Done</button>
+        </div>
+    </div>
+
+    <!-- ── CREATE MODAL ── -->
+    <div id="create-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+            </div>
+            <div class="modal-title">Create AI Agent</div>
+            <div class="modal-body">Configure a new CustomerSupport AI agent and upload its knowledge base.</div>
+
+            <form id="create-agent-form">
+                <div class="form-group">
+                    <label class="form-label">Agent Name (No spaces)</label>
+                    <input type="text" id="agent-name" class="form-input" placeholder="e.g. SALESBOT_V1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company</label>
+                    <input type="text" id="agent-company" class="form-input" placeholder="e.g. Acme Corp" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Agent Purpose</label>
+                    <div class="textarea-wrapper">
+                        <textarea id="agent-purpose" class="form-textarea auto-resize" rows="2"
+                            placeholder="Briefly describe what this agent does..." required></textarea>
+                        <button type="button" class="expand-btn" data-target="agent-purpose" title="Focus Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Customer Handling Instructions</label>
+                    <div class="textarea-wrapper">
+                        <textarea id="agent-instructions" class="form-textarea auto-resize" rows="3"
+                            placeholder="Detailed instructions on tone, restrictions, and handling procedures..."
+                            required></textarea>
+                        <button type="button" class="expand-btn" data-target="agent-instructions" title="Focus Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Agent Knowledge Base (File)</label>
+                    <div class="file-upload-wrapper" id="drop-zone">
+                        <input type="file" id="agent-file" class="file-upload-input" accept=".pdf,.doc,.docx" required>
+                        <div class="file-upload-content">
+                            <div class="file-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div class="file-text" id="file-text-instruction"><span>Click to upload</span> or drag and
+                                drop<div style="font-size:11px; opacity:0.6; margin-top:4px;">PDF, DOC, DOCX only</div>
+                            </div>
+                            <div class="file-name-display" id="file-name-display"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-cancel" id="create-cancel-btn">Cancel</button>
+                    <button type="submit" class="btn-modal-success" id="create-submit-btn">Create Agent</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── EDIT MODAL ── -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon"
+                style="background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.25); color: var(--apple-blue); margin-bottom: 20px;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+            </div>
+            <div class="modal-title">Edit AI Agent</div>
+            <div class="modal-body">Update configuration for this CustomerSupport AI agent.</div>
+
+            <form id="edit-agent-form">
+                <div class="form-group">
+                    <label class="form-label">Agent Name</label>
+                    <input type="text" id="edit-agent-name" class="form-input" disabled
+                        style="opacity: 0.5; cursor: not-allowed; background: rgba(0,0,0,0.5);">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company</label>
+                    <input type="text" id="edit-agent-company" class="form-input" placeholder="e.g. Acme Corp" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Agent Purpose</label>
+                    <div class="textarea-wrapper">
+                        <textarea id="edit-agent-purpose" class="form-textarea auto-resize" rows="2"
+                            placeholder="Briefly describe what this agent does..." required></textarea>
+                        <button type="button" class="expand-btn" data-target="edit-agent-purpose" title="Focus Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Customer Handling Instructions</label>
+                    <div class="textarea-wrapper">
+                        <textarea id="edit-agent-instructions" class="form-textarea auto-resize" rows="3"
+                            placeholder="Detailed instructions on tone, restrictions, and handling procedures..."
+                            required></textarea>
+                        <button type="button" class="expand-btn" data-target="edit-agent-instructions"
+                            title="Focus Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Update Knowledge Base (Optional)</label>
+                    <div class="file-upload-wrapper" id="edit-drop-zone">
+                        <input type="file" id="edit-agent-file" class="file-upload-input" accept=".pdf,.doc,.docx">
+                        <div class="file-upload-content">
+                            <div class="file-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div class="file-text" id="edit-file-text-instruction"><span>Upload new file</span> or leave
+                                empty to keep current<div style="font-size:11px; opacity:0.6; margin-top:4px;">PDF, DOC,
+                                    DOCX only</div>
+                            </div>
+                            <div class="file-name-display" id="edit-file-name-display"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-modal-cancel" id="edit-cancel-btn">Cancel</button>
+                    <button type="submit" class="btn-modal-success" id="edit-submit-btn"
+                        style="background: rgba(10,132,255,0.15); border-color: rgba(10,132,255,0.3); color: var(--apple-blue);">Save
+                        Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ── DELETE CONFIRMATION MODAL ── -->
+    <div id="row-delete-modal" class="modal-overlay">
+        <div class="modal-box small">
+            <div class="modal-icon red">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <div class="modal-title">Delete Agent?</div>
+            <div class="modal-body">Are you sure you want to permanently delete <strong id="delete-target-name"
+                    style="color: #fff;"></strong> from Firestore?</div>
+            <div class="modal-actions">
+                <button class="btn-modal-cancel" id="row-delete-cancel-btn">Cancel</button>
+                <button class="btn-modal-danger" id="row-delete-confirm-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MAIN CONTENT ── -->
+    <div class="console-wrapper">
+        <!-- Header -->
+        <div class="console-header">
+            <div class="header-left">
+                <div class="header-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="header-title">CustomerSupport AI — Admin Console</div>
+                    <div class="header-subtitle">CustomerSupport Agent Configuration · live-customersupport-ai</div>
+                </div>
+            </div>
+            <div class="engine-pill">genai-e2e-demos</div>
+        </div>
+
+        <!-- Status Banner -->
+        <div id="status-message">
+            <div class="status-dot"></div>
+            <span id="status-text"></span>
+        </div>
+
+        <!-- Unified Panel -->
+        <div class="glass-panel">
+            <div class="section-label">Configuration Actions</div>
+            <div class="actions-row">
+                <!-- Create -->
+                <button class="action-btn btn-create" id="btn-open-create">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Create New Agent
+                </button>
+
+                <!-- Retrieve from Firestore -->
+                <button class="action-btn btn-retrieve" id="btn-retrieve-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Retrieve All Agents
+                </button>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="section-label" style="margin-bottom:12px">Agent Configuration</div>
+
+            <div>
+                <!-- Topbar -->
+                <div class="editor-topbar">
+                    <div class="topbar-left">
+                        <div class="tl-dots">
+                            <div class="tl-dot tl-red"></div>
+                            <div class="tl-dot tl-yellow"></div>
+                            <div class="tl-dot tl-green"></div>
+                        </div>
+                        <span class="mode-pill">ai-agents/ · <span id="agent-count">0</span> agents loaded</span>
+                    </div>
+                </div>
+
+                <!-- Body (Table) -->
+                <div class="table-body">
+                    <div id="table-container">
+                        <div class="empty-state">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="1.5"
+                                style="width:48px; height:48px; margin:0 auto 16px; opacity:0.5;">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <div>Loading agents from Firestore...</div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-bar" id="pagination-bar" style="display: none;">
+                        <div class="page-info">
+                            Showing <span id="page-start">0</span> - <span id="page-end">0</span> of <span
+                                id="page-total">0</span>
+                        </div>
+                        <div class="page-controls">
+                            <select class="rows-select" id="rows-per-page">
+                                <option value="5">5 rows</option>
+                                <option value="10">10 rows</option>
+                                <option value="15">15 rows</option>
+                                <option value="20">20 rows</option>
+                                <option value="25">25 rows</option>
+                            </select>
+                            <button class="page-btn" id="page-prev" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2" style="width:14px; height:14px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button class="page-btn" id="page-next" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2" style="width:14px; height:14px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /.glass-panel -->
+    </div><!-- /.console-wrapper -->
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDocs, deleteDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+
+        // ── Firebase Config ───────────────────────────────────────────────────────
+        const firebaseConfig = {
+            apiKey: "AIzaSyAU4978uMcFABSTmOtC70ySsAP4yoJpqv8",
+            authDomain: "genai-e2e-demos.firebaseapp.com",
+            projectId: "genai-e2e-demos",
+            storageBucket: "genai-e2e-demos.firebasestorage.app",
+            messagingSenderId: "554686566379",
+            appId: "1:554686566379:web:3e4133f3779dff6de913ae"
+        };
+
+        let db, storage;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app, "live-customersupport-ai");
+            storage = getStorage(app);
+        } catch (e) {
+            console.error("Firebase init failed:", e);
+        }
+
+        // ── DOM Elements ──────────────────────────────────────────────────────────
+        const btnOpenCreate = document.getElementById('btn-open-create');
+        const btnRetrieve = document.getElementById('btn-retrieve-all');
+
+        // Create Elements
+        const createModal = document.getElementById('create-modal');
+        const createForm = document.getElementById('create-agent-form');
+        const createCancel = document.getElementById('create-cancel-btn');
+        const createSubmit = document.getElementById('create-submit-btn');
+        const agentNameInput = document.getElementById('agent-name');
+        const fileInput = document.getElementById('agent-file');
+        const dropZone = document.getElementById('drop-zone');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const fileInstruction = document.getElementById('file-text-instruction');
+
+        // Row Delete Elements
+        const rowDeleteModal = document.getElementById('row-delete-modal');
+        const rowDeleteCancel = document.getElementById('row-delete-cancel-btn');
+        const rowDeleteConfirm = document.getElementById('row-delete-confirm-btn');
+        const deleteTargetName = document.getElementById('delete-target-name');
+
+        // Edit Elements
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-agent-form');
+        const editCancel = document.getElementById('edit-cancel-btn');
+        const editSubmit = document.getElementById('edit-submit-btn');
+        const editFileInput = document.getElementById('edit-agent-file');
+        const editDropZone = document.getElementById('edit-drop-zone');
+        const editFileNameDisplay = document.getElementById('edit-file-name-display');
+        const editFileInstruction = document.getElementById('edit-file-text-instruction');
+
+        // Focus Overlay
+        const focusOverlay = document.getElementById('focus-overlay');
+        const focusTextarea = document.getElementById('focus-textarea');
+        const focusDoneBtn = document.getElementById('focus-done-btn');
+        const focusTitle = document.getElementById('focus-title');
+        let currentExpandTarget = null; // ID of the input being edited in focus mode
+
+        // Table & Pagination
+        const tableContainer = document.getElementById('table-container');
+        const agentCountSpan = document.getElementById('agent-count');
+        const statusMsg = document.getElementById('status-message');
+        const statusText = document.getElementById('status-text');
+
+        const paginationBar = document.getElementById('pagination-bar');
+        const rowsPerPageSelect = document.getElementById('rows-per-page');
+        const pagePrevBtn = document.getElementById('page-prev');
+        const pageNextBtn = document.getElementById('page-next');
+        const pageStartSpan = document.getElementById('page-start');
+        const pageEndSpan = document.getElementById('page-end');
+        const pageTotalSpan = document.getElementById('page-total');
+
+        // State
+        let allAgentsData = []; // Array of { id, data } objects
+        let currentPage = 1;
+        let rowsPerPage = 5;
+        let selectedAgentToDelete = null;
+
+        // ── UI Helpers ────────────────────────────────────────────────────────────
+        function showStatus(msg, type = 'info') {
+            statusText.textContent = msg;
+            statusMsg.className = `visible ${type}`;
+        }
+
+        function lockBtns() {
+            btnOpenCreate.disabled = true;
+            btnRetrieve.disabled = true;
+        }
+        function unlockBtns() {
+            btnOpenCreate.disabled = false;
+            btnRetrieve.disabled = false;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
+        // ── Auto-expanding Textareas ─────────────────────────────────────────────
+        document.querySelectorAll('.auto-resize').forEach(textarea => {
+            textarea.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        });
+
+        // ── Focus Overlay Logic ──────────────────────────────────────────────────
+        document.querySelectorAll('.expand-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.getAttribute('data-target');
+                currentExpandTarget = document.getElementById(targetId);
+                if (!currentExpandTarget) return;
+
+                // Determine title based on target ID
+                let title = "Editing Content";
+                if (targetId.includes('purpose')) title = "Editing Agent Purpose";
+                if (targetId.includes('instructions')) title = "Editing Handling Instructions";
+
+                focusTitle.textContent = title;
+                focusTextarea.value = currentExpandTarget.value;
+                focusTextarea.readOnly = currentExpandTarget.readOnly; // Respect read-only state if viewing
+
+                // Sync typing back to target immediately
+                focusTextarea.oninput = () => {
+                    if (!focusTextarea.readOnly) {
+                        currentExpandTarget.value = focusTextarea.value;
+                        currentExpandTarget.dispatchEvent(new Event('input')); // trigger auto-resize
+                    }
+                };
+
+                focusOverlay.classList.add('visible');
+                focusTextarea.focus();
+            });
+        });
+
+        focusDoneBtn.addEventListener('click', () => focusOverlay.classList.remove('visible'));
+
+        // ── Table & Pagination Logic ─────────────────────────────────────────────
+        function renderTable() {
+            agentCountSpan.textContent = allAgentsData.length;
+
+            if (allAgentsData.length === 0) {
+                tableContainer.innerHTML = `
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="width:48px; height:48px; margin:0 auto 16px; opacity:0.5;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <div>No agents found. Create one to get started.</div>
+                </div>
+            `;
+                paginationBar.style.display = 'none';
+                return;
+            }
+
+            const totalItems = allAgentsData.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+            // Ensure current page is valid after changing rowsPerPage or deleting items
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+
+            const pageData = allAgentsData.slice(startIndex, endIndex);
+
+            let html = `
+            <table class="agent-table">
+                <thead>
+                    <tr>
+                        <th width="15%">Company</th>
+                        <th width="15%">Agent Name</th>
+                        <th width="28%">Purpose</th>
+                        <th width="28%">Instructions</th>
+                        <th width="14%" style="text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+            pageData.forEach(item => {
+                const val = item.data;
+                const key = item.id;
+
+                const gsFileLink = val.knowledgeFilePath;
+
+                html += `
+                <tr>
+                    <td style="font-weight:600;">${escapeHTML(val.company || '—')}</td>
+                    <td><code style="color:var(--apple-green);">${escapeHTML(val.agentName || key)}</code></td>
+                    <td>
+                        <div class="truncate-box">${escapeHTML(val.purpose)}</div>
+                        <button class="table-expand-btn view-expand-btn" data-id="${key}" data-field="purpose" title="Expand Purpose">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        </button>
+                    </td>
+                    <td>
+                        <div class="truncate-box">${escapeHTML(val.customerHandlingInstructions)}</div>
+                        <button class="table-expand-btn view-expand-btn" data-id="${key}" data-field="instructions" title="Expand Instructions">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        </button>
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:6px; justify-content: center;">
+                            ${gsFileLink ? `
+                            <button class="table-action-btn view-file-btn" data-gspath="${gsFileLink}" title="View Knowledge Base File">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                            ` : `
+                            <div class="table-action-btn" style="opacity: 0.3; cursor: not-allowed;" title="No file uploaded">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                </svg>
+                            </div>
+                            `}
+                            <button class="table-action-btn edit-row-btn" data-id="${key}" title="Edit Agent">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button class="table-action-btn delete-row-btn" data-id="${key}" title="Delete Agent">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            });
+
+            html += `</tbody></table>`;
+            tableContainer.innerHTML = html;
+
+            // Update Pagination Info
+            pageStartSpan.textContent = startIndex + 1;
+            pageEndSpan.textContent = endIndex;
+            pageTotalSpan.textContent = totalItems;
+            pagePrevBtn.disabled = currentPage === 1;
+            pageNextBtn.disabled = currentPage === totalPages;
+            paginationBar.style.display = 'flex';
+        }
+
+        rowsPerPageSelect.addEventListener('change', (e) => {
+            rowsPerPage = parseInt(e.target.value);
+            currentPage = 1; // reset to first page
+            renderTable();
+        });
+
+        pagePrevBtn.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
+        pageNextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(allAgentsData.length / rowsPerPage);
+            if (currentPage < totalPages) { currentPage++; renderTable(); }
+        });
+
+        // Handle Table Actions (Event Delegation)
+        tableContainer.addEventListener('click', (e) => {
+
+            // Dynamically open GS File
+            const viewFileBtn = e.target.closest('.view-file-btn');
+            if (viewFileBtn) {
+                const gsPath = viewFileBtn.getAttribute('data-gspath');
+                if (!gsPath) return;
+
+                showStatus("Generating temporary secure link to view file...", "info");
+
+                // If the database accidentally still has a standard HTTP URL, just open it.
+                if (gsPath.startsWith('http')) {
+                    window.open(gsPath, '_blank');
+                    showStatus("File opened.", "success");
+                    return;
+                }
+
+                // Otherwise, fetch temporary URL for the GS path and open it
+                try {
+                    const fileRef = ref(storage, gsPath);
+                    getDownloadURL(fileRef).then(url => {
+                        window.open(url, '_blank');
+                        showStatus("File opened.", "success");
+                    }).catch(err => {
+                        console.error(err);
+                        showStatus(`Cannot open file: ${err.message}`, "error");
+                    });
+                } catch (err) {
+                    console.error(err);
+                    showStatus("Invalid file path.", "error");
+                }
+                return;
+            }
+
+            // Expand Read-Only
+            const expandBtn = e.target.closest('.view-expand-btn');
+            if (expandBtn) {
+                const id = expandBtn.getAttribute('data-id');
+                const field = expandBtn.getAttribute('data-field');
+                const agent = allAgentsData.find(a => a.id === id);
+                if (!agent) return;
+
+                const isPurpose = field === 'purpose';
+                const content = isPurpose ? agent.data.purpose : agent.data.customerHandlingInstructions;
+
+                focusTitle.textContent = isPurpose ? `Purpose: ${agent.data.agentName}` : `Instructions: ${agent.data.agentName}`;
+                focusTextarea.value = content;
+                focusTextarea.readOnly = true; // Set to view-only mode
+                focusTextarea.oninput = null; // Remove binding
+                focusOverlay.classList.add('visible');
+                return;
+            }
+
+            // Delete Row
+            const delBtn = e.target.closest('.delete-row-btn');
+            if (delBtn) {
+                selectedAgentToDelete = delBtn.getAttribute('data-id');
+                deleteTargetName.textContent = selectedAgentToDelete;
+                rowDeleteModal.classList.add('visible');
+                return;
+            }
+
+            // Edit Row
+            const editBtn = e.target.closest('.edit-row-btn');
+            if (editBtn) {
+                const id = editBtn.getAttribute('data-id');
+                const agentItem = allAgentsData.find(a => a.id === id);
+                if (!agentItem) return;
+                const agent = agentItem.data;
+
+                // Populate form
+                document.getElementById('edit-agent-name').value = agent.agentName || id;
+                document.getElementById('edit-agent-company').value = agent.company || '';
+                document.getElementById('edit-agent-purpose').value = agent.purpose || '';
+                document.getElementById('edit-agent-instructions').value = agent.customerHandlingInstructions || '';
+
+                // trigger auto-resize
+                document.querySelectorAll('#edit-agent-form .auto-resize').forEach(ta => ta.dispatchEvent(new Event('input')));
+
+                // reset file input visually
+                editFileInput.value = '';
+                updateEditFileDisplay(null);
+
+                editModal.classList.add('visible');
+                return;
+            }
+        });
+
+        // ── Fetch All Flow ────────────────────────────────────────────────────────
+        async function fetchAllAgents(silent = false) {
+            lockBtns();
+            // Only show fetching status if we aren't trying to preserve an error message
+            if (!silent) {
+                showStatus("Fetching agents from Firestore...", "info");
+            }
+            tableContainer.innerHTML = `
+            <div class="empty-state">
+                <span class="spinner" style="margin-bottom:12px; width:24px; height:24px; color:var(--apple-blue);"></span>
+                <div>Retrieving data...</div>
+            </div>
+        `;
+            paginationBar.style.display = 'none';
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "ai-agents"));
+                allAgentsData = [];
+                querySnapshot.forEach((docSnap) => {
+                    allAgentsData.push({ id: docSnap.id, data: docSnap.data() });
+                });
+
+                // Only show success status if we aren't trying to preserve an error message
+                if (!silent) {
+                    showStatus(`Retrieved ${allAgentsData.length} agents.`, "success");
+                }
+
+                renderTable();
+            } catch (error) {
+                console.error(error);
+                showStatus(`Failed to retrieve: ${error.message}`, "error");
+                tableContainer.innerHTML = `<div class="empty-state" style="color:var(--apple-red);">Error loading data.</div>`;
+            } finally {
+                unlockBtns();
+            }
+        }
+
+        btnRetrieve.addEventListener('click', fetchAllAgents);
+
+        // ── Create Agent Flow ─────────────────────────────────────────────────────
+        btnOpenCreate.addEventListener('click', () => createModal.classList.add('visible'));
+        createCancel.addEventListener('click', () => { createModal.classList.remove('visible'); resetCreateForm(); });
+
+        // Enforce Agent Name formatting
+        agentNameInput.addEventListener('input', function () {
+            this.value = this.value.toUpperCase().replace(/\s+/g, '');
+        });
+
+        // Custom File Upload Logic (Create)
+        function validateFileExtension(file) {
+            if (!file) return false;
+            const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            return ['.pdf', '.doc', '.docx'].includes(ext);
+        }
+
+        function updateFileDisplay(file) {
+            if (file) {
+                if (!validateFileExtension(file)) {
+                    dropZone.classList.add('invalid');
+                    fileInstruction.innerHTML = `<span>Invalid file type</span><div style="font-size:11px; opacity:0.8; margin-top:4px;">Must be PDF, DOC, or DOCX</div>`;
+                    fileInstruction.style.display = 'block';
+                    fileNameDisplay.style.display = 'none';
+                    fileInput.value = ''; // Clear input
+                    return;
+                }
+                dropZone.classList.remove('invalid');
+                fileNameDisplay.textContent = file.name;
+                fileNameDisplay.style.display = 'block';
+                fileInstruction.style.display = 'none';
+            } else {
+                dropZone.classList.remove('invalid');
+                fileNameDisplay.textContent = '';
+                fileNameDisplay.style.display = 'none';
+                fileInstruction.innerHTML = `<span>Click to upload</span> or drag and drop<div style="font-size:11px; opacity:0.6; margin-top:4px;">PDF, DOC, DOCX only</div>`;
+                fileInstruction.style.display = 'block';
+            }
+        }
+
+        fileInput.addEventListener('change', (e) => updateFileDisplay(e.target.files[0]));
+        const preventDefaults = e => { e.preventDefault(); e.stopPropagation(); };
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, preventDefaults, false));
+        ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false));
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) { fileInput.files = files; updateFileDisplay(files[0]); }
+        });
+
+        function resetCreateForm() {
+            createForm.reset();
+            dropZone.classList.remove('invalid');
+            updateFileDisplay(null);
+            document.querySelectorAll('#create-agent-form .auto-resize').forEach(ta => { ta.style.height = 'auto'; });
+        }
+
+        createForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = agentNameInput.value.trim();
+            const company = document.getElementById('agent-company').value.trim();
+            const purpose = document.getElementById('agent-purpose').value.trim();
+            const instructions = document.getElementById('agent-instructions').value.trim();
+            const file = fileInput.files[0];
+
+            if (!name || !file) return;
+
+            createModal.classList.remove('visible');
+            lockBtns();
+            showStatus(`Creating Agent '${name}' and uploading file...`, "info");
+
+            tableContainer.innerHTML = `
+                <div class="empty-state">
+                <span class="spinner" style="margin-bottom:12px; width:24px; height:24px; color:var(--apple-green);"></span>
+                <div>Saving Agent to Firestore...</div>
+                </div>
+            `;
+            paginationBar.style.display = 'none';
+
+            try {
+                const storagePath = `knowledge/${name}/${file.name}`;
+                const fileRef = ref(storage, storagePath);
+                await uploadBytes(fileRef, file);
+
+                // Build the exact GS URI required by backend systems
+                const gsPath = `gs://${firebaseConfig.storageBucket}/${storagePath}`;
+
+                const agentData = {
+                    company: company,
+                    agentName: name,
+                    purpose: purpose,
+                    customerHandlingInstructions: instructions,
+                    knowledgeFilePath: gsPath,
+                    isKnowledgeBaseReady: false
+                };
+
+                await setDoc(doc(db, "ai-agents", name), agentData);
+
+                // --- NEW: Trigger Backend Knowledge Processing ---
+                showStatus(`Extracting knowledge for '${name}'... This may take a moment.`, "info");
+                tableContainer.innerHTML = `
+                    <div class="empty-state">
+                        <span class="spinner" style="margin-bottom:12px; width:24px; height:24px; color:var(--apple-green);"></span>
+                        <div>Extracting Knowledge Base (Gemini AI Processing)...</div>
+                    </div>
+                `;
+
+                const response = await fetch(`/live-customer-support/initialize/saveagent/${name}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Extraction failed with status: ${response.status}`);
+                }
+                // ------------------------------------------------
+
+                showStatus(`Agent '${name}' successfully created and knowledge extracted!`, "success");
+                resetCreateForm();
+                await fetchAllAgents(); // Auto refresh
+            } catch (error) {
+                console.error(error);
+                showStatus(`Extraction Failed: ${error.message}`, "error");
+                await fetchAllAgents(true);
+            } finally {
+                unlockBtns();
+            }
+        });
+
+        // ── Edit Agent Flow ───────────────────────────────────────────────────────
+        editCancel.addEventListener('click', () => editModal.classList.remove('visible'));
+
+        function updateEditFileDisplay(file) {
+            if (file) {
+                if (!validateFileExtension(file)) {
+                    editDropZone.classList.add('invalid');
+                    editFileInstruction.innerHTML = `<span>Invalid file type</span><div style="font-size:11px; opacity:0.8; margin-top:4px;">Must be PDF, DOC, or DOCX</div>`;
+                    editFileInstruction.style.display = 'block';
+                    editFileNameDisplay.style.display = 'none';
+                    editFileInput.value = ''; // Clear input
+                    return;
+                }
+                editDropZone.classList.remove('invalid');
+                editFileNameDisplay.textContent = file.name;
+                editFileNameDisplay.style.display = 'block';
+                editFileInstruction.style.display = 'none';
+            } else {
+                editDropZone.classList.remove('invalid');
+                editFileNameDisplay.textContent = '';
+                editFileNameDisplay.style.display = 'none';
+                editFileInstruction.innerHTML = `<span>Upload new file</span> or leave empty to keep current<div style="font-size:11px; opacity:0.6; margin-top:4px;">PDF, DOC, DOCX only</div>`;
+                editFileInstruction.style.display = 'block';
+            }
+        }
+
+        editFileInput.addEventListener('change', (e) => updateEditFileDisplay(e.target.files[0]));
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => editDropZone.addEventListener(eventName, preventDefaults, false));
+        ['dragenter', 'dragover'].forEach(eventName => editDropZone.addEventListener(eventName, () => editDropZone.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(eventName => editDropZone.addEventListener(eventName, () => editDropZone.classList.remove('dragover'), false));
+        editDropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) { editFileInput.files = files; updateEditFileDisplay(files[0]); }
+        });
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('edit-agent-name').value;
+            const company = document.getElementById('edit-agent-company').value.trim();
+            const purpose = document.getElementById('edit-agent-purpose').value.trim();
+            const instructions = document.getElementById('edit-agent-instructions').value.trim();
+
+            editModal.classList.remove('visible');
+            lockBtns();
+            showStatus(`Updating Agent '${name}'...`, "info");
+
+            tableContainer.innerHTML = `
+                <div class="empty-state">
+                <span class="spinner" style="margin-bottom:12px; width:24px; height:24px; color:var(--apple-blue);"></span>
+                <div>Updating Agent data...</div>
+                </div>
+            `;
+            paginationBar.style.display = 'none';
+
+            try {
+                // Find existing agent to keep old gs path if no new file is uploaded
+                const existingAgent = allAgentsData.find(a => a.id === name);
+                let gsPath = existingAgent ? existingAgent.data.knowledgeFilePath : null;
+                let isNewFileUploaded = false;
+
+                // Only upload if a new file was provided
+                if (editFileInput.files.length > 0) {
+                    const file = editFileInput.files[0];
+                    const storagePath = `knowledge/${name}/${file.name}`;
+                    const fileRef = ref(storage, storagePath);
+                    await uploadBytes(fileRef, file);
+
+                    // Build new GS Path
+                    gsPath = `gs://${firebaseConfig.storageBucket}/${storagePath}`;
+                    isNewFileUploaded = true;
+                }
+
+                const agentData = {
+                    company: company,
+                    agentName: name,
+                    purpose: purpose,
+                    customerHandlingInstructions: instructions,
+                    knowledgeFilePath: gsPath
+                };
+
+                await setDoc(doc(db, "ai-agents", name), agentData, { merge: true });
+
+                // --- NEW: Trigger Backend Knowledge Processing ONLY IF NEW FILE ---
+                if (isNewFileUploaded) {
+                    showStatus(`Extracting new knowledge for '${name}'... This may take a moment.`, "info");
+                    tableContainer.innerHTML = `
+                                <div class="empty-state">
+                                    <span class="spinner" style="margin-bottom:12px; width:24px; height:24px; color:var(--apple-blue);"></span>
+                                    <div>Extracting New Knowledge Base (Gemini AI Processing)...</div>
+                                </div>
+                            `;
+
+                    const response = await fetch(`/live-customer-support/initialize/saveagent/${name}`, {
+                        method: 'POST'
+                    });
+
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.detail || `Extraction failed with status: ${response.status}`);
+                    }
+                    showStatus(`Agent '${name}' updated and new knowledge extracted!`, "success");
+                } else {
+                    showStatus(`Agent '${name}' successfully updated!`, "success");
+                }
+                // ----------------------------------------------------------------
+
+                await fetchAllAgents(); // Auto refresh
+            } catch (error) {
+                console.error(error);
+                showStatus(`Extraction Failed: ${error.message}`, "error");
+                await fetchAllAgents(true);
+            } finally {
+                unlockBtns();
+            }
+        });
+
+        // ── Delete Agent Flow ─────────────────────────────────────────────────────
+        rowDeleteCancel.addEventListener('click', () => rowDeleteModal.classList.remove('visible'));
+
+        rowDeleteConfirm.addEventListener('click', async () => {
+            const name = selectedAgentToDelete;
+            if (!name) return;
+
+            rowDeleteModal.classList.remove('visible');
+            lockBtns();
+            showStatus(`Deleting Agent '${name}'...`, "info");
+
+            try {
+                await deleteDoc(doc(db, "ai-agents", name));
+                showStatus(`Agent '${name}' successfully deleted.`, "success");
+                await fetchAllAgents(); // Auto refresh
+            } catch (error) {
+                console.error(error);
+                showStatus(`Delete failed: ${error.message}`, "error");
+            } finally {
+                unlockBtns();
+            }
+        });
+
+        // Automatically load agents on page start
+        window.addEventListener('DOMContentLoaded', fetchAllAgents);
+
+    </script>
+</body>
+
+</html>
