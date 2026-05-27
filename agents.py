@@ -116,8 +116,10 @@ def get_customersupport_agent(agent_name: str, is_female: bool) -> LlmAgent:
       
       <system_core_directive>
       Always speak VERY SLOWLY in a CASUAL pace & warm tone.
-      </system_core_directive>      
-    
+      </system_core_directive>
+      
+      {speech_rules}
+
       <purpose>
       {purpose}
       </purpose>
